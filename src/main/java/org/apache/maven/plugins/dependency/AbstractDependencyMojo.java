@@ -227,9 +227,22 @@ public abstract class AbstractDependencyMojo
 
             if ( file.isDirectory() )
             {
-                // usual case is a future jar packaging, but there are special cases: classifier and other packaging
-                throw new MojoExecutionException( "Artifact has not been packaged yet. When used on reactor artifact, "
-                    + "unpack should be executed after packaging: see MDEP-98." );
+                try 
+                {
+                    String includeFilter = includes == null || includes.isEmpty() ? "**" : includes;
+                    List<File> sources = FileUtils.getFiles( file, includeFilter, excludes );
+                    for ( File source : sources ) 
+                    {
+                        String dest = source.getPath().replace( file.getPath(), location.getPath() );
+                        getLog().debug( "copying from " + source + " to " + dest );
+                        FileUtils.copyFile( source, new File( dest ) );
+                    }
+                }
+                catch ( IOException e )
+                {
+                    throw new MojoExecutionException( "Error copying files from " + file + " to " + location, e );
+                }
+                return;
             }
 
             UnArchiver unArchiver;
